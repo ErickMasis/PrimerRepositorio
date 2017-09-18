@@ -1,4 +1,93 @@
-managua nicaragua
+Codigo de Acceso con Visual studio
 
-vamos acontar con varios tiempo en el archivo para ve como cambia la cosa con cada uno de esto
-despues veremos que podemos hacer
+Imports System.Security.Cryptography
+Imports System.Text
+
+Public Class Acceso
+    Private des As New TripleDESCryptoServiceProvider
+    Private hashmd5 As New MD5CryptoServiceProvider
+    Private myKey As String
+
+    Dim nue_empleado As New Clase_Empleados
+    Dim validar As New variables_validacion
+
+    Private Sub OK_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles OK.Click
+        If validar.StrIdUser <> 0 Then
+            If General.acceso(validar.StrIdUser, Encriptar(PasswordTextBox.Text.Trim)) = True Then
+                ProgressBar1.Visible = True
+                Timer1.Start()
+            Else
+                MessageBox.Show("Contraseña Incorrecta y/o Usuario Inactivo", "Contraseña Incorrecta", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                PasswordTextBox.Clear()
+                PasswordTextBox.Focus()
+            End If
+        Else
+            MessageBox.Show("Seleccione un Usuario del Sistema", "Usuario Incorrecto", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End If
+        Call validar.ClearMemory()
+    End Sub
+
+    Private Sub Cancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Cancel.Click
+        Frm_Principal.Close()
+    End Sub
+
+    Sub actualizar_CmbxVendedor()
+        cmbxEmpleado.DataSource = nue_empleado.listar_Usuario
+        cmbxEmpleado.DisplayMember = "NOMBRE"
+        cmbxEmpleado.ValueMember = "ID_EMPLEADO"
+    End Sub
+
+    Private Sub cmbxEmpleado_GotFocus(sender As Object, e As EventArgs) Handles cmbxEmpleado.GotFocus
+        actualizar_CmbxVendedor()
+    End Sub
+
+    Private Sub Empleado_LostFocus(sender As Object, e As EventArgs) Handles cmbxEmpleado.LostFocus
+        Dim row As DataRowView = DirectCast(cmbxEmpleado.SelectedItem, DataRowView)
+        validar.StrIdUser = row.Item("ID_EMPLEADO").ToString
+        validar.StrUsuario = row.Item("NOMBRE").ToString
+    End Sub
+
+    Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
+        ProgressBar1.Increment(20)
+        If ProgressBar1.Value = 100 Then
+            Timer2.Start()
+        End If
+    End Sub
+
+    Private Sub Timer2_Tick(sender As Object, e As EventArgs) Handles Timer2.Tick
+        Me.Opacity = Me.Opacity - 0.2
+        If Me.Opacity <= 0 Then
+            Timer1.Stop()
+            Timer2.Stop()
+            Frm_Principal.Mnu.Enabled = True
+            Frm_Principal.StatusBar1.Visible = True
+            Frm_Principal.IdUsuario = validar.StrIdUser
+            Frm_Principal.StrUsuario = validar.StrUsuario
+            Frm_Principal.StatusBar1.Panels(1).Text = "Usuario: " & validar.StrUsuario
+            If Frm_Principal.IdUsuario = 55 Then Frm_Principal.Menu_Facturación.Visible = True
+            Me.Close()
+        End If
+    End Sub
+
+    Private Sub PasswordTextBox_KeyPress(sender As Object, e As KeyPressEventArgs) Handles PasswordTextBox.KeyPress
+        If PasswordTextBox.Text <> "" And AscW(e.KeyChar) = 13 Then OK.Focus() : e.Handled = True
+    End Sub
+
+    Private Sub cmbxEmpleado_SelectionChangeCommitted(sender As Object, e As EventArgs) Handles cmbxEmpleado.SelectionChangeCommitted
+        PasswordTextBox.Focus()
+    End Sub
+
+    Private Function Encriptar(ByVal texto As String) As String
+        myKey = Trim(texto)
+        des.Key = hashmd5.ComputeHash((New UnicodeEncoding).GetBytes(myKey))
+        des.Mode = CipherMode.ECB
+        Dim encrypt As ICryptoTransform = des.CreateEncryptor()
+        Dim buff() As Byte = UnicodeEncoding.ASCII.GetBytes(texto)
+        Encriptar = Convert.ToBase64String(encrypt.TransformFinalBlock(buff, 0, buff.Length))
+        Return Encriptar
+    End Function
+
+    Private Sub Acceso_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+    End Sub
+End Class
